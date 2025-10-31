@@ -1,0 +1,145 @@
+{
+  "testMetadata": {
+    "testName": "NPP Accounting Service Fee Posting Test",
+    "testDescription": "Verify NPP Accounting Service processes an internal fee posting for DebitSuspense_CreditFeeGL action"
+  },
+  "messaging": {
+    "inputQueue": {
+      "destination": "P/A/NPP/AU/PMT/FIORCH/1/PE/N/ACCOUNTING/NPP/FAST/INWARD/NORM",
+      "isCompressed": false
+    },
+    "reply": {
+      "destination": "P/A/NPP/AU/PMT/ACCOUNTING/1/PE/N/ACCOUNTING-GL/NPP/FAST/INWARD/NORM",
+      "destinationType": "topic",
+      "isCompressed": false,
+      "responseTemplatePath": "test-data_2.json",
+      "correlationIdDisabled": true
+    },
+    "protocol": "Solace"
+  },
+  "testTemplateData": {
+    "templatePath": "template_2.json",
+    "templateParameters": {
+      "static": {
+        "ComponentName": "PSP_NPP",
+        "WorkFlow": "NPP002",
+        "ActionCode": "DebitSuspense_CreditFeeGL",
+        "ActionDesc": "Post fee from suspense to income GL",
+        "EventDescription": "Request Sent for accounting:DebitSuspense_CreditFeeGL",
+        "EventType": "PE",
+        "EventProducer": "FastInwardOrchestrator",
+        "SystemId": null,
+        "EventVersion": null,
+        "SN_INTR_BNK_STTLMT_AMT": "25.00",
+        "DBTR_LEGAL_NM": "NPP Suspense",
+        "TO_ACCOUNT_LEGAL_NAME": "Fee Income GL",
+        "MSG_ID": "RSBKAUFSXXX20250820000900000001234",
+        "TO_ACCOUNT_ID": "FEE-INC-4500",
+        "DBTR_NM": "NPP Suspense",
+        "INSTG_BIC": "RSBKAUFSXXX",
+        "TO_ACCOUNT_NAME": "Fee Income GL",
+        "TRACE_ID": "PSP043740111",
+        "Channel": "NPP",
+        "Direction": "INWARD",
+        "DomainName": null,
+        "DomainType": null,
+        "ClientName": "NPP_INTERNAL",
+        "Country": "AU",
+        "BIC": "RSBKAUFSXXX",
+        "Branch": "062372",
+        "Name": "NPP Suspense",
+        "CustClass": "BANK",
+        "Reference": "NOTPROVIDED",
+        "AcctId": "NPP-SUSP-01",
+        "AcctSys": "SAP",
+        "AcctGrp": "INTERNAL",
+        "CostCentre": "FEE_MGMT",
+        "CurCode": "AUD",
+        "Amount": "25.00",
+        "AcctUse": "Suspense",
+        "ClearPref": "INTERNAL",
+        "PurposeText": "Internal Fee Recognition",
+        "Message": "NPP Fee Recognition Aug 20",
+        "Narrative": "NPP Fee Recognition",
+        "MsgType": "npp.internal.01",
+        "Scheme": "internal.fee.01",
+        "ClrngSys": "INTERNAL",
+        "StatusDesc": "AccountingSucceeded",
+		"INTERNAL_REF": "FEE-POST-12345",
+		"EVENT_CODE": "FEE_POST_SUCCESS"
+      }
+    }
+  },
+  "databaseVerification": [
+    {
+      "query": "SELECT * FROM PSP_ACCT_ENTRY WHERE PU_ID = '${puId}' AND LEG_ID = '1' AND ACTION_CODE = 'DebitSuspense_CreditFeeGL'",
+      "verification": [
+        {
+          "field": "PU_ID",
+          "type": "equals",
+          "value": "${puId}"
+        },
+        {
+          "field": "ACTION_CODE",
+          "type": "equals",
+          "value": "DebitSuspense_CreditFeeGL"
+        },
+        {
+          "field": "DEBIT_ACCOUNT_ID",
+          "type": "equals",
+          "value": "NPP-SUSP-01"
+        },
+        {
+          "field": "DEBIT_AMOUNT",
+          "type": "equals",
+          "value": "25.00"
+        },
+        {
+          "field": "CREDIT_ACCOUNT_ID",
+          "type": "equals",
+          "value": "FEE-INC-4500"
+        },
+        {
+          "field": "CREDIT_AMOUNT",
+          "type": "equals",
+          "value": "25.00"
+        },
+        {
+          "field": "TX_ID",
+          "type": "equals",
+          "value": "${txId}"
+        }
+      ]
+    }
+  ],
+  "mongoVerification": [
+    {
+      "collection": "accountingAuditlog",
+      "description": "Verify MongoDB audit trail for Fee Posting",
+      "filter": {
+        "puId": "${puId}"
+      },
+      "verification": [
+        {
+          "field": "reqId",
+          "type": "equals",
+          "value": "${txId}"
+        },
+        {
+          "field": "source",
+          "type": "equals",
+          "value": "NPPInwardAccountingService"
+        },
+        {
+          "field": "eventcode",
+          "type": "equals",
+          "value": "P.NPP.STS.CP_PAE.102"
+        }
+      ],
+      "expectedCount": {
+        "type": "equals",
+        "value": 1
+      }
+    }
+  ]
+}
