@@ -1,0 +1,142 @@
+{
+  "testMetadata": {
+    "testName": "xyz Accounting Service Fee Posting Test",
+    "testDescription": "Verify xyz Accounting Service processes an internal fee posting for DebitSuspense_CreditFeeGL"
+  },
+  "messaging": {
+    "inputQueue": {
+      "destination": "P/A/xyz/AU/PMT/FIORCH/1/PE/N/ACCOUNTING/xyz/FAST/INWARD/NORM",
+      "isCompressed": false
+    },
+    "reply": {
+      "destination": "P/A/xyz/AU/PMT/ACCOUNTING/1/PE/N/ACCOUNTING-GL/xyz/FAST/INWARD/NORM",
+      "destinationType": "topic",
+      "isCompressed": false,
+      "responseTemplatePath": "test-data_2.json",
+      "correlationIdDisabled": true
+    },
+    "protocol": "Solace"
+  },
+  "testTemplateData": {
+    "templatePath": "template_2.json",
+    "templateParameters": {
+      "static": {
+        "ComponentName": "PSP_xyz",
+        "WorkFlow": "xyz002",
+        "ReplyToQueue": "P/A/xyz/AU/PMT/FIORCH/1/PE/N/ACCOUNTING/xyz/FAST/INWARD/NORM/RESPONSE",
+        "ActionCode": "DebitSuspense_CreditFeeGL",
+        "ActionDesc": "Post fee from suspense to income GL",
+        "EventCode": "P.xyz.ADT.CP_PAE.100",
+        "EventDescription": "Request Sent for accounting:DebitSuspense_CreditFeeGL",
+        "EventType": "PE",
+        "EventProducer": "FastInwardOrchestrator",
+        "EventTS": "2025-08-20T09:00:00.000",
+        "INSTG_BIC": "RSBKAUFSXXX",
+        "DBTR_NM": "xyz Suspense",
+        "TO_ACCOUNT_NAME": "Fee Income GL",
+        "SN_INTR_BNK_STTLMT_AMT": "25.00",
+        "DBTR_LEGAL_NM": "xyz Suspense",
+        "TO_ACCOUNT_LEGAL_NAME": "Fee Income GL",
+        "MSG_ID": "RSBKAUFSXXX20250820000900000001234",
+        "TO_ACCOUNT_ID": "FEE-INC-4500",
+        "TRACE_ID": "PSP043740111",
+        "ClientName": "xyz_INTERNAL",
+        "Country": "AU",
+        "ThirdPartyPayID": "Fee_Posting_01",
+        "NbrofItems": 1,
+        "Branch": "062372",
+        "Name": "xyz Suspense",
+        "CustClass": "BANK",
+        "Reference": "NOTPROVIDED",
+        "AcctId": "xyz-SUSP-01",
+        "AcctSys": "SAP",
+        "AcctGrp": "INTERNAL",
+        "CostCentre": "FEE_MGMT",
+        "CurCode": "AUD",
+        "Amount": "25.00",
+        "AcctUse": "Suspense",
+        "ClearPref": "INTERNAL",
+        "PurposeText": "Internal Fee Recognition",
+        "Message": "xyz Fee Recognition Aug 20",
+        "MsgType": "xyz.internal.01",
+        "Scheme": "internal.fee.01",
+        "ClrngSys": "INTERNAL",
+        "Status": "SUCCESS",
+        "StatusCode": "0",
+        "StatusDesc": "AccountingSucceeded"
+      }
+    }
+  },
+  "databaseVerification": [
+    {
+      "query": "SELECT * FROM PSP_ACCT_ENTRY WHERE PU_ID = '${puId}' AND TX_ID = '${txId}' AND LEG_ID = '1' AND ACTION_CODE = 'DebitSuspense_CreditFeeGL'",
+      "verification": [
+        {
+          "field": "PU_ID",
+          "type": "equals",
+          "value": "${puId}"
+        },
+        {
+          "field": "TX_ID",
+          "type": "equals",
+          "value": "${txId}"
+        },
+        {
+          "field": "ACTION_CODE",
+          "type": "equals",
+          "value": "DebitSuspense_CreditFeeGL"
+        },
+        {
+          "field": "DEBIT_ACCOUNT_ID",
+          "type": "equals",
+          "value": "xyz-SUSP-01"
+        },
+        {
+          "field": "DEBIT_AMOUNT",
+          "type": "equals",
+          "value": "25.00"
+        },
+        {
+          "field": "CREDIT_ACCOUNT_ID",
+          "type": "equals",
+          "value": "FEE-INC-4500"
+        },
+        {
+          "field": "CREDIT_AMOUNT",
+          "type": "equals",
+          "value": "25.00"
+        }
+      ]
+    }
+  ],
+  "mongoVerification": [
+    {
+      "collection": "accountingAuditlog",
+      "description": "Verify MongoDB audit trail for Fee Posting",
+      "filter": {
+        "puId": "${puId}"
+      },
+      "verification": [
+        {
+          "field": "reqId",
+          "type": "equals",
+          "value": "${txId}"
+        },
+        {
+          "field": "source",
+          "type": "equals",
+          "value": "xyzInwardAccountingService"
+        },
+        {
+          "field": "eventcode",
+          "type": "equals",
+          "value": "P.xyz.STS.CP_PAE.102"
+        }
+      ],
+      "expectedCount": {
+        "type": "equals",
+        "value": 1
+      }
+    }
+  ]
+}
