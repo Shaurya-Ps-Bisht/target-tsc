@@ -1,0 +1,141 @@
+{
+  "testMetadata": {
+    "testName": "Corporate Payroll Processing Test",
+    "testDescription": "End-to-end test for corporate payroll processing through the xyz Accounting Service."
+  },
+  "messaging": {
+    "inputQueue": {
+      "destination": "P/A/xyz/AU/PMT/FIORCH/1/PE/N/ACCOUNTING/xyz/FAST/INWARD/NORM",
+      "isCompressed": false
+    },
+    "reply": {
+      "destination": "P/A/xyz/AU/PMT/ACCOUNTING/1/PE/N/ACCOUNTING-GL/xyz/FAST/INWARD/NORM",
+      "destinationType": "topic",
+      "isCompressed": false,
+      "responseTemplatePath": "test-data_3.json",
+      "correlationIdDisabled": true
+    },
+    "protocol": "Solace"
+  },
+  "testTemplateData": {
+    "templatePath": "template_3.json",
+    "templateParameters": {
+      "static": {
+        "ComponentName": "PSP_xyz",
+        "WorkFlow": "xyz003",
+        "ReplyToQueue": "P/A/xyz/AU/PMT/FIORCH/1/PE/N/ACCOUNTING/xyz/FAST/INWARD/NORM/RESPONSE",
+        "ActionCode": "DebitClient_CreditClearing",
+        "ActionDesc": "Debit Corporate Client DDA, Credit Internal Clearing GL",
+        "EventCode": "P.xyz.ADT.CP_PAE.100",
+        "EventDescription": "Request Sent for accounting:DebitClient_CreditClearing",
+        "EventID": "f9e8d7c6-40ab-4cf6-9e0b-e0ec8eeab52",
+        "EventType": "PE",
+        "EventProducer": "FastInwardOrchestrator",
+        "SystemId": null,
+        "EventCode2": "P.xyz.STS.SP_ES.100",
+        "EventID2": "2a66be78-3a94-4b53-9161-a4aabc643c28",
+        "SN_INTR_BNK_STTLMT_AMT": "750000.00",
+        "DBTR_LEGAL_NM": "ACME Corp",
+        "TO_ACCOUNT_LEGAL_NAME": "Internal Payroll Clearing",
+        "MSG_ID": "RSBKAUFSXXX20250821001430005009876",
+        "TO_ACCOUNT_ID": "PAYROLL-CLR-SUSP",
+        "DBTR_NM": "ACME Corp",
+        "INSTG_BIC": "RSBKAUFSXXX",
+        "TO_ACCOUNT_NAME": "Internal Payroll Clearing",
+        "TRACE_ID": "PSP043740222",
+        "MUID": "RSBKAUFSXXX20250821001430005009876",
+        "Channel": "xyz",
+        "Direction": "INWARD",
+        "ClientName": "xyz_CORP",
+        "ThirdPartyPayID": "PAYROLL_BATCH_A12",
+        "NbrofItems": 1,
+        "Country": "AU",
+        "BIC": "RSBKAUFSXXX",
+        "Branch": "062372",
+        "CustClass": "CORP",
+        "Reference": "NOTPROVIDED",
+        "AcctId": "ACME-CORP-DDA",
+        "AcctSys": "CORP",
+        "AcctGrp": "CORP",
+        "CostCentre": "CORP_BANKING",
+        "CurCode": "AUD",
+        "Amount": "750000.00",
+        "AcctUse": "ClientDDA",
+        "ClearPref": "INTERNAL",
+        "PurposeText": "Corporate Payroll Batch",
+        "Message": "Payroll Batch A12 Aug 21",
+        "NarrativeCredit": "Payroll Batch A12",
+        "StatusDesc": "SUCCESS",
+        "INTERNAL_REF": "CORP-BATCH-A12",
+        "EVENT_CODE_RES": "CORP_POST_SUCCESS"
+      }
+    }
+  },
+  "databaseVerification": [
+    {
+      "query": "SELECT * FROM PSP_ACCT_ENTRY WHERE PU_ID = '${puId}' AND ACTION_CODE = 'DebitClient_CreditClearing'",
+      "verification": [
+        {
+          "field": "PU_ID",
+          "type": "equals",
+          "value": "${puId}"
+        },
+        {
+          "field": "ACTION_CODE",
+          "type": "equals",
+          "value": "DebitClient_CreditClearing"
+        },
+        {
+          "field": "DEBIT_ACCOUNT_ID",
+          "type": "equals",
+          "value": "ACME-CORP-DDA"
+        },
+        {
+          "field": "DEBIT_AMOUNT",
+          "type": "equals",
+          "value": "750000.00"
+        },
+        {
+          "field": "CREDIT_ACCOUNT_ID",
+          "type": "equals",
+          "value": "PAYROLL-CLR-SUSP"
+        },
+        {
+          "field": "CREDIT_AMOUNT",
+          "type": "equals",
+          "value": "750000.00"
+        }
+      ]
+    }
+  ],
+  "mongoVerification": [
+    {
+      "collection": "accountingAuditlog",
+      "description": "Verify audit log entry for successful corporate payroll processing",
+      "filter": {
+        "puId": "${puId}"
+      },
+      "verification": [
+        {
+          "field": "reqId",
+          "type": "equals",
+          "value": "${txId}"
+        },
+        {
+          "field": "source",
+          "type": "equals",
+          "value": "xyzInwardAccountingService"
+        },
+        {
+          "field": "eventcode",
+          "type": "equals",
+          "value": "P.xyz.STS.CP_PAE.102"
+        }
+      ],
+      "expectedCount": {
+        "type": "equals",
+        "value": 1
+      }
+    }
+  ]
+}
