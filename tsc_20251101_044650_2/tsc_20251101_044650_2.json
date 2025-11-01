@@ -1,0 +1,135 @@
+{
+  "testMetadata": {
+    "testName": "Accounting Service Fee Posting Test",
+    "testDescription": "Verify Accounting Service processes an internal fee posting: DebitSuspense_CreditFeeGL"
+  },
+  "messaging": {
+    "inputQueue": {
+      "destination": "P/A/xyz/AU/PMT/FIORCH/1/PE/N/ACCOUNTING/xyz/FAST/INWARD/NORM",
+      "isCompressed": false
+    },
+    "reply": {
+      "destination": "P/A/xyz/AU/PMT/ACCOUNTING/1/PE/N/ACCOUNTING-GL/xyz/FAST/INWARD/NORM",
+      "destinationType": "topic",
+      "isCompressed": false,
+      "responseTemplatePath": "test-data_2.json",
+      "correlationIdDisabled": true
+    },
+    "protocol": "Solace"
+  },
+  "testTemplateData": {
+    "templatePath": "template_2.json",
+    "templateParameters": {
+      "static": {
+        "ActionCode": "DebitSuspense_CreditFeeGL",
+        "ActionDesc": "Post fee from suspense to income GL",
+        "SN_INTR_BNK_STTLMT_AMT": "25.00",
+        "DBTR_LEGAL_NM": "xyz Suspense",
+        "TO_ACCOUNT_LEGAL_NAME": "Fee Income GL",
+        "MSG_ID": "RSBKAUFSXXX20250820000900000001234",
+        "TO_ACCOUNT_ID": "FEE-INC-4500",
+        "DBTR_NM": "xyz Suspense",
+        "INSTG_BIC": "RSBKAUFSXXX",
+        "TO_ACCOUNT_NAME": "Fee Income GL",
+        "TRACE_ID": "PSP043740111",
+        "ClientName": "xyz_INTERNAL",
+        "Country": "AU",
+        "BIC": "RSBKAUFSXXX",
+        "Branch": "062372",
+        "CustClass": "BANK",
+        "Reference": "NOTPROVIDED",
+        "AcctId": "xyz-SUSP-01",
+        "AcctSys": "SAP",
+        "AcctGrp": "INTERNAL",
+        "CostCentre": "FEE_MGMT",
+        "CurCode": "AUD",
+        "Amount": "25.00",
+        "AcctUse": "Suspense",
+        "ClearPref": "INTERNAL",
+        "PurposeText": "Internal Fee Recognition",
+        "Name": "Fee Income GL",
+        "Message": "xyz Fee Recognition Aug 20",
+        "MsgType": "xyz.internal.01",
+        "Scheme": "internal.fee.01",
+        "ClrngSys": "INTERNAL",
+        "Status": "SUCCESS",
+        "StatusCode": "0",
+        "StatusDesc": "AccountingSucceeded",
+        "INTERNAL_REF": "FEE-POST-12345",
+        "EVENT_CODE": "FEE_POST_SUCCESS"
+      }
+    }
+  },
+  "databaseVerification": [
+    {
+      "query": "SELECT * FROM PSP_ACCT_ENTRY WHERE PU_ID = '${puId}' AND TX_ID = '${txId}' AND LEG_ID = '1' AND ACTION_CODE = 'DebitSuspense_CreditFeeGL'",
+      "verification": [
+        {
+          "field": "PU_ID",
+          "type": "equals",
+          "value": "${puId}"
+        },
+        {
+          "field": "TX_ID",
+          "type": "equals",
+          "value": "${txId}"
+        },
+        {
+          "field": "ACTION_CODE",
+          "type": "equals",
+          "value": "DebitSuspense_CreditFeeGL"
+        },
+        {
+          "field": "DEBIT_ACCOUNT_ID",
+          "type": "equals",
+          "value": "xyz-SUSP-01"
+        },
+        {
+          "field": "DEBIT_AMOUNT",
+          "type": "equals",
+          "value": "25.00"
+        },
+        {
+          "field": "CREDIT_ACCOUNT_ID",
+          "type": "equals",
+          "value": "FEE-INC-4500"
+        },
+        {
+          "field": "CREDIT_AMOUNT",
+          "type": "equals",
+          "value": "25.00"
+        }
+      ]
+    }
+  ],
+  "mongoVerification": [
+    {
+      "collection": "accountingAuditlog",
+      "description": "Verify MongoDB audit trail for Fee Posting",
+      "filter": {
+        "puId": "${puId}"
+      },
+      "verification": [
+        {
+          "field": "reqId",
+          "type": "equals",
+          "value": "${txId}"
+        },
+        {
+          "field": "source",
+          "type": "equals",
+          "value": "xyzInwardAccountingService"
+        },
+        {
+          "field": "eventcode",
+          "type": "equals",
+          "value": "P.xyz.STS.CP_PAE.102"
+        }
+      ],
+      "expectedCount": {
+        "type": "equals",
+        "value": 1
+      }
+    }
+  ]
+}
