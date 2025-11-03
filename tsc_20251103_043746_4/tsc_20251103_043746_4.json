@@ -1,0 +1,112 @@
+{
+  "testMetadata": {
+    "testName": "CoreSvc Accounting DebitClearing_CreditBeneficiary",
+    "testDescription": "End-to-end test for DebitClearing_CreditBeneficiary action in CoreSvc Accounting"
+  },
+  "messaging": {
+    "inputQueue": {
+      "destination": "P/A/CoreSvc/AU/PMT/Orchestrator/1/PE/N/ACCOUNTING/CoreSvc/FAST/INWARD/NORM",
+      "isCompressed": false
+    },
+    "reply": {
+      "destination": "P/A/CoreSvc/AU/PMT/ACCOUNTING/1/PE/N/ACCOUNTING-GL/CoreSvc/FAST/INWARD/NORM",
+      "destinationType": "topic",
+      "isCompressed": false,
+      "responseTemplatePath": "test-data_4.json",
+      "correlationIdDisabled": true
+    },
+    "protocol": "Solace"
+  },
+  "testTemplateData": {
+    "templatePath": "template_4.json",
+    "templateParameters": {
+      "static": {
+        "ActionCode": "DebitClearing_CreditBeneficiary",
+        "ActionDesc": null,
+        "fromBic": "DEBTORBANKAUXX",
+        "toBic": "CREDITRBANKAUXX",
+        "fromCountry": "AU",
+        "toCountry": "AU",
+        "fromBranch": "DEBIT_BRANCH_CODE",
+        "toBranch": "CREDIT_BRANCH_CODE",
+        "currency": "AUD",
+        "amount": "150.75",
+        "beneficiaryCountry": "AU",
+        "beneficiaryName": "Creditor Name",
+        "beneficiaryAccountId": "CREDIT_ACCT_ID_456",
+        "debitCountry": "AU",
+        "debitBic": "DEBTORBANKAUXX",
+        "debitBranch": "DEBIT_BRANCH_CODE",
+        "debitAccountId": "DEBIT_ACCT_ID_123",
+        "debitAcctSys": "LegacyGL",
+        "debitAcctUse": "Suspense",
+        "beneficiaryLegalName": "Creditor Name Ltd",
+        "beneficiaryAliasType": "/EMAIL",
+        "beneficiaryAlias": "accounts@creditor.com",
+        "debtorName": "Debtor Name",
+        "msgId": "MSG_ID_123456789",
+        "traceId": "TRACEID_98765",
+        "interBankSettlementDate": "2025-08-19",
+        "toAccountLegalName": "Creditor Name",
+        "toAccountName": "Creditor Name"
+      }
+    }
+  },
+  "databaseVerification": [
+    {
+      "query": "SELECT * FROM PAYMENT_ACCOUNTING_LOG WHERE PU_ID = '${puId}' AND TX_ID = '${txId}'",
+      "verification": [
+        {
+          "field": "DEBIT_AMOUNT",
+          "type": "equals",
+          "value": "${amount}"
+        },
+        {
+          "field": "CREDIT_AMOUNT",
+          "type": "equals",
+          "value": "${amount}"
+        },
+        {
+          "field": "DEBIT_ACCOUNT_ID",
+          "type": "equals",
+          "value": "DEBIT_ACCT_ID_123"
+        },
+        {
+          "field": "CREDIT_ACCOUNT_ID",
+          "type": "equals",
+          "value": "INTERNAL_CREDIT_ACCT_789"
+        }
+      ]
+    }
+  ],
+  "mongoVerification": [
+    {
+      "collection": "payment_audit_logs",
+      "description": "Verify MongoDB audit trail for CoreSvc Accounting event",
+      "filter": {
+        "puId": "${puId}"
+      },
+      "verification": [
+        {
+          "field": "reqId",
+          "type": "equals",
+          "value": "${txId}"
+        },
+        {
+          "field": "source",
+          "type": "equals",
+          "value": "InboundAccountingService"
+        },
+        {
+          "field": "eventcode",
+          "type": "equals",
+          "value": "EVT.CoreSvc.Status.Accounting.102"
+        }
+      ],
+      "expectedCount": {
+        "type": "equals",
+        "value": 1
+      }
+    }
+  ]
+}
