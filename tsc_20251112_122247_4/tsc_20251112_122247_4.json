@@ -1,0 +1,139 @@
+{
+  "testMetadata": {
+    "testName": "CoreSvc Accounting Domestic Transfer Test",
+    "testDescription": "End-to-end test for CoreSvc Accounting processing a domestic transfer."
+  },
+  "messaging": {
+    "inputQueue": {
+      "destination": "P/A/CoreSvc/AU/PMT/Orchestrator/1/PE/N/ACCOUNTING/CoreSvc/FAST/INWARD/NORM",
+      "isCompressed": false
+    },
+    "reply": {
+      "destination": "P/A/CoreSvc/AU/PMT/ACCOUNTING/1/PE/N/ACCOUNTING-GL/CoreSvc/FAST/INWARD/NORM",
+      "destinationType": "topic",
+      "isCompressed": false,
+      "responseTemplatePath": "test-data_4.json",
+      "correlationIdDisabled": true
+    },
+    "protocol": "Solace"
+  },
+  "testTemplateData": {
+    "templatePath": "template_4.json",
+    "templateParameters": {
+      "static": {
+        "ActionCode": "DebitClearing_CreditBeneficiary",
+        "ActionDesc": null,
+        "fromBic": "DEBTORBANKAUXX",
+        "toBic": "CREDITRBANKAUXX",
+        "fromCountry": "AU",
+        "toCountry": "AU",
+        "fromBranch": "DEBIT_BRANCH_CODE",
+        "toBranch": "CREDIT_BRANCH_CODE",
+        "currency": "AUD",
+        "amount": "150.75",
+        "beneficiaryCountry": "AU",
+        "beneficiaryBic": "CREDITRBANKAUXX",
+        "beneficiaryBranch": "CREDIT_BRANCH_CODE",
+        "beneficiaryName": "Creditor Name",
+        "beneficiaryAccountId": "CREDIT_ACCT_ID_456",
+        "debitCountry": "AU",
+        "debitBic": "DEBTORBANKAUXX",
+        "debitBranch": "DEBIT_BRANCH_CODE",
+        "debitAccountId": "DEBIT_ACCT_ID_123",
+        "debitAccountGroup": null,
+        "debitAcctSys": "LegacyGL",
+        "debitAcctUse": "Suspense",
+        "debitCostCentre": null,
+        "creditCountry": "AU",
+        "creditBic": "CREDITRBANKAUXX",
+        "creditBranch": "CREDIT_BRANCH_CODE",
+        "creditAccountId": "CREDIT_ACCT_ID_456",
+        "creditAccountGroup": "AUA",
+        "creditAcctSys": "CoreBankingSys",
+        "creditAcctUse": null,
+        "creditCostCentre": null,
+        "clearPref": "FAST",
+        "clearSubPref": "ICS1",
+        "chargeBearer": "SLEV",
+        "ClientName": "CoreSvc"
+      }
+    }
+  },
+  "databaseVerification": [
+    {
+      "query": "SELECT * FROM PAYMENT_ACCOUNTING_LOG WHERE PU_ID = '${puId}' AND TX_ID = '${txId}'",
+      "verification": [
+        {
+          "field": "PU_ID",
+          "type": "equals",
+          "value": "${puId}"
+        },
+        {
+          "field": "TX_ID",
+          "type": "equals",
+          "value": "${txId}"
+        },
+        {
+          "field": "DEBIT_ACCOUNT_ID",
+          "type": "equals",
+          "value": "DEBIT_ACCT_ID_123"
+        },
+        {
+          "field": "DEBIT_AMOUNT",
+          "type": "equals",
+          "value": "${amount}"
+        },
+        {
+          "field": "DEBIT_CURRENCY",
+          "type": "equals",
+          "value": "AUD"
+        },
+        {
+          "field": "CREDIT_ACCOUNT_ID",
+          "type": "equals",
+          "value": "CREDIT_ACCT_ID_456"
+        },
+        {
+          "field": "CREDIT_AMOUNT",
+          "type": "equals",
+          "value": "${amount}"
+        },
+        {
+          "field": "CREDIT_CURRENCY",
+          "type": "equals",
+          "value": "AUD"
+        }
+      ]
+    }
+  ],
+  "mongoVerification": [
+    {
+      "collection": "payment_audit_logs",
+      "description": "Verify MongoDB audit trail for Accounting event",
+      "filter": {
+        "puId": "${puId}"
+      },
+      "verification": [
+        {
+          "field": "reqId",
+          "type": "equals",
+          "value": "${txId}"
+        },
+        {
+          "field": "source",
+          "type": "equals",
+          "value": "InboundAccountingService"
+        },
+        {
+          "field": "eventcode",
+          "type": "equals",
+          "value": "EVT.CoreSvc.Status.Accounting.102"
+        }
+      ],
+      "expectedCount": {
+        "type": "equals",
+        "value": 1
+      }
+    }
+  ]
+}
